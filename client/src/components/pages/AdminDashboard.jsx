@@ -1,0 +1,178 @@
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; // <-- NEW: Added for security redirects
+import toast from "react-hot-toast";
+
+const AdminDashboard = () => {
+  const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [adminUser, setAdminUser] = useState(null); // <-- NEW: To store the logged-in admin's info
+  
+  const navigate = useNavigate(); // <-- NEW: To redirect unauthorized users
+
+  useEffect(() => {
+    // --- NEW: SECURITY CHECK START ---
+    const storedUser = sessionStorage.getItem("user");
+
+    if (!storedUser) {
+      toast.error("Please log in to access the dashboard.");
+      navigate("/auth");
+      return;
+    }
+
+    const parsedUser = JSON.parse(storedUser);
+
+    if (parsedUser.role !== "admin") {
+      toast.error("Access Denied: Restaurant Staff Only");
+      navigate("/dashboard"); // Kick regular customers to their own dashboard
+      return;
+    }
+
+    setAdminUser(parsedUser); // Save admin info so we can display their name
+    // --- NEW: SECURITY CHECK END ---
+
+    // If they pass the security check, fetch the live orders!
+    fetchOrders();
+  }, [navigate]);
+
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch("http://localhost:5001/api/orders");
+      const data = await response.json();
+      if (data.success) {
+        setOrders(data.orders);
+      }
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStatusChange = async (orderId, newStatus) => {
+    try {
+      const response = await fetch(`http://localhost:5001/api/orders/${orderId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order._id === orderId ? { ...order, status: newStatus } : order
+          )
+        );
+        toast.success(`Order updated to ${newStatus}`);
+      } else {
+        toast.error("Failed to update status. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("An error occurred while updating the status.");
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "Preparing":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "Out for Delivery":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "Delivered":
+        return "bg-green-100 text-green-800 border-green-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-8 pt-28"> {/* Added pt-28 so it clears your fixed Navbar */}
+      <div className="max-w-7xl mx-auto">
+        
+        {/* UPDATED HEADER: Now shows Admin Name */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-4xl font-serif font-bold text-brown-900">Restaurant Dashboard</h1>
+            {adminUser && (
+              <p className="text-gray-600 mt-1">
+                Logged in as: <span className="font-bold text-orange-600">{adminUser.name}</span>
+              </p>
+            )}
+          </div>
+          <button 
+            onClick={() => navigate("/")} 
+            className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition"
+          >
+            Back to Website
+          </button>
+        </div>
+
+        {/* The rest of your exact UI code stays exactly the same! */}
+        {isLoading ? (
+          <p className="text-center text-gray-600 text-xl">Loading live orders...</p>
+        ) : orders.length === 0 ? (
+          <div className="bg-white rounded-xl shadow p-10 text-center">
+            <p className="text-gray-500 text-xl">No orders yet. Waiting for hungry customers!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {orders.map((order) => (
+              <div key={order._id} className="bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-600 relative overflow-hidden">
+                <div className="flex flex-col md:flex-row justify-between mb-4 pb-4 border-b border-gray-100">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-800">{order.customerName}</h2>
+                    <p className="text-sm text-gray-500">Order ID: {order._id}</p>
+                    <p className="text-sm text-gray-500">{new Date(order.createdAt).toLocaleString()}</p>
+                  </div>
+                  
+                  <div className="mt-4 md:mt-0 flex flex-col items-start md:items-end">
+                    <select
+                      value={order.status}
+                      onChange={(e) => handleStatusChange(order._id, e.target.value)}
+                      className={`px-4 py-2 rounded-full text-sm font-semibold border cursor-pointer outline-none transition-colors duration-300 shadow-sm ${getStatusColor(order.status)}`}
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Preparing">Preparing</option>
+                      <option value="Out for Delivery">Out for Delivery</option>
+                      <option value="Delivered">Delivered</option>
+                    </select>
+                    <p className="text-2xl font-bold text-brown-900 mt-3">₹{order.totalAmount}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-8">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-700 mb-2">Order Items:</h3>
+                    <ul className="space-y-1">
+                      {order.items.map((item, index) => (
+                        <li key={index} className="text-gray-600 flex justify-between bg-gray-50 px-3 py-2 rounded">
+                          <span>{item.quantity}x {item.name}</span>
+                          <span className="font-medium">₹{item.price * item.quantity}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-700 mb-2">Customer Details:</h3>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p><span className="font-medium">Email:</span> {order.email}</p>
+                      <p><span className="font-medium">Phone:</span> {order.phone}</p>
+                      <p><span className="font-medium">Address:</span> {order.address}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
