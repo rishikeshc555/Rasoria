@@ -22,9 +22,9 @@ const Navbar = () => {
     <nav className="fixed top-0 left-0 w-full bg-white shadow-md z-50 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
         {/* Logo */}
-        <h1 className="text-3xl font-serif font-bold text-orange-800">
-          R A S O R I A
-        </h1>
+<h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-orange-800 whitespace-nowrap overflow-hidden text-ellipsis">
+  R A S O R I A
+</h1>
 
         {/* Navigation Links - Desktop */}
         <ul className="hidden md:flex gap-10 font-medium text-gray-800 text-lg items-center">
