@@ -1,7 +1,4 @@
-// src/components/Reservation.jsx
 import React, { useState } from "react";
-// Double-check this path is correct based on your build error.
-// It should be correct for a file at src/components/Reservation.jsx.
 import { API_BASE_URL } from "../apiConfig";
 
 const Reservation = () => {
@@ -9,6 +6,10 @@ const Reservation = () => {
     name: "", email: "", date: "", time: "", guests: "", message: ""
   });
   const [status, setStatus] = useState(null);
+  
+  // Track if the user is currently interacting with the date/time fields
+  const [dateFocused, setDateFocused] = useState(false);
+  const [timeFocused, setTimeFocused] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -30,6 +31,8 @@ const Reservation = () => {
       if (data.success) {
         setStatus("success");
         setFormData({ name: "", email: "", date: "", time: "", guests: "", message: "" });
+        setDateFocused(false);
+        setTimeFocused(false);
       } else {
         setStatus("error");
       }
@@ -51,25 +54,45 @@ const Reservation = () => {
           <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Your Name" required className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500" />
           <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Your Email" required className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500" />
 
-          {/* CORRECTED Date Input: Works on a single click! */}
-          <input
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            required
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-600 bg-white"
-          />
+          {/* Date Input */}
+          <div className="relative w-full">
+            <input
+              type="date"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+              onFocus={() => setDateFocused(true)}
+              onBlur={() => setDateFocused(false)}
+              required
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-700 bg-white"
+            />
+            {/* Overlay hides when focused OR when data is entered */}
+            {!formData.date && !dateFocused && (
+              <div className="absolute top-1 bottom-1 left-1 right-12 flex items-center pl-3 bg-white text-gray-400 pointer-events-none">
+                Select Date
+              </div>
+            )}
+          </div>
 
-          {/* CORRECTED Time Input: Works on a single click! */}
-          <input
-            type="time"
-            name="time"
-            value={formData.time}
-            onChange={handleChange}
-            required
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-600 bg-white"
-          />
+          {/* Time Input */}
+          <div className="relative w-full">
+            <input
+              type="time"
+              name="time"
+              value={formData.time}
+              onChange={handleChange}
+              onFocus={() => setTimeFocused(true)}
+              onBlur={() => setTimeFocused(false)}
+              required
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-700 bg-white"
+            />
+            {/* Overlay hides when focused OR when data is entered */}
+            {!formData.time && !timeFocused && (
+              <div className="absolute top-1 bottom-1 left-1 right-12 flex items-center pl-3 bg-white text-gray-400 pointer-events-none">
+                Select Time
+              </div>
+            )}
+          </div>
 
           <select name="guests" value={formData.guests} onChange={handleChange} required className="w-full md:col-span-2 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-600">
             <option value="">Number of Guests</option>
