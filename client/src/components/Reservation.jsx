@@ -51,8 +51,31 @@ const Reservation = () => {
           {/* Added w-full to all inputs */}
           <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Your Name" required className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500" />
           <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Your Email" required className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500" />
-          <input type="date" name="date" value={formData.date} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-600" />
-          <input type="time" name="time" value={formData.time} onChange={handleChange} required className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-600" />
+          {/* Fixed Date Input */}
+          <input 
+            type="text" 
+            name="date" 
+            value={formData.date} 
+            onChange={handleChange} 
+            placeholder="Select Date" 
+            onFocus={(e) => (e.target.type = "date")}
+            onBlur={(e) => { if (!e.target.value) e.target.type = "text" }}
+            required 
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-600 bg-white" 
+          />
+          
+          {/* Fixed Time Input */}
+          <input 
+            type="text" 
+            name="time" 
+            value={formData.time} 
+            onChange={handleChange} 
+            placeholder="Select Time" 
+            onFocus={(e) => (e.target.type = "time")}
+            onBlur={(e) => { if (!e.target.value) e.target.type = "text" }}
+            required 
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-600 bg-white" 
+          />
           
           <select name="guests" value={formData.guests} onChange={handleChange} required className="w-full md:col-span-2 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-600">
             <option value="">Number of Guests</option>
