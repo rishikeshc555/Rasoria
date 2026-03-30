@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "../apiConfig";
+import { API_BASE_URL } from "../api";
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
