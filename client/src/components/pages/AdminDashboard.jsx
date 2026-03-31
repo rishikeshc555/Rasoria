@@ -4,7 +4,10 @@ import toast from "react-hot-toast";
 import { io } from "socket.io-client"; // <-- STAGE 4: Import Socket.io client
 
 // <-- STAGE 4: Initialize socket connection OUTSIDE the component
-const socket = io("https://rasoria-api.onrender.com");
+const socket = io("https://rasoria-api.onrender.com", {
+  withCredentials: true,
+  transports: ["websocket", "polling"]
+});
 
 const AdminDashboard = () => {
   const [orders, setOrders] = useState([]);
@@ -139,6 +142,18 @@ const AdminDashboard = () => {
               </p>
             )}
           </div>
+          <button 
+              onClick={() => {
+                console.log("Attempting to play audio...");
+                const audio = new Audio("/notification.mp3");
+                audio.play()
+                  .then(() => console.log("Audio played successfully!"))
+                  .catch(err => console.error("Audio block error:", err));
+              }} 
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+            >
+              Test Notification Sound
+            </button>
           <button 
             onClick={() => navigate("/")} 
             className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition"
