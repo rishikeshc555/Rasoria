@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { io } from "socket.io-client"; // <-- STAGE 4: Import Socket.io client
 
 // <-- STAGE 4: Initialize socket connection OUTSIDE the component
-const socket = io("http://localhost:5001");
+const socket = io("https://rasoria-api.onrender.com");
 
 const AdminDashboard = () => {
   const [orders, setOrders] = useState([]);
@@ -40,7 +40,7 @@ const AdminDashboard = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch("http://localhost:5001/api/orders");
+      const response = await fetch("https://rasoria-api.onrender.com/api/orders");
       const data = await response.json();
       if (data.success) {
         setOrders(data.orders);
@@ -86,7 +86,7 @@ const AdminDashboard = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/orders/${orderId}/status`, {
+      const response = await fetch(`https://rasoria-api.onrender.com/api/orders/${orderId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),

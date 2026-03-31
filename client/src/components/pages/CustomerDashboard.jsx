@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client"; // <-- 1. Import Socket.io client
 
 // 2. Initialize socket connection OUTSIDE the component
-const socket = io("http://localhost:5001");
+const socket = io("https://rasoria-api.onrender.com");
 
 const CustomerDashboard = () => {
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ const CustomerDashboard = () => {
         // Grab the ID from your session storage user object
         const userId = parsedUser._id || parsedUser.id; 
         
-        const response = await fetch(`http://localhost:5001/api/orders/user/${userId}`);
+        const response = await fetch(`https://rasoria-api.onrender.com/api/orders/user/${userId}`);
         const data = await response.json();
 
         if (data.success) {

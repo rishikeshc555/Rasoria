@@ -59,7 +59,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalAmount, clearCart, clo
     };
 
     try {
-      const response = await fetch("http://localhost:5001/api/orders", {
+      const response = await fetch("https://rasoria-api.onrender.com/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderData),
