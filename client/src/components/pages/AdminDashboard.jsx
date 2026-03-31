@@ -86,31 +86,32 @@ useEffect(() => {
   };
 }, []);  // --- END STAGE 4 ADDITIONS ---
 
-  const handleStatusChange = async (orderId, newStatus) => {
-    try {
-      const response = await fetch(`https://rasoria-api.onrender.com/api/orders/${orderId}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
+const handleStatusChange = async (orderId, newStatus) => {
+  try {
+    const response = await fetch(`https://rasoria-api.onrender.com/api/orders/${orderId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // <-- 1. CRITICAL: Added credentials for CORS
+      body: JSON.stringify({ status: newStatus }),
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (data.success) {
-        setOrders((prevOrders) =>
-          prevOrders.map((order) =>
-            order._id === orderId ? { ...order, status: newStatus } : order
-          )
-        );
-        toast.success(`Order updated to ${newStatus}`);
-      } else {
-        toast.error("Failed to update status. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error updating status:", error);
-      toast.error("An error occurred while updating the status.");
+    if (data.success) {
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order._id === orderId ? { ...order, status: newStatus } : order
+        )
+      );
+      toast.success(`Order updated to ${newStatus}`);
+    } else {
+      toast.error("Failed to update status. Please try again.");
     }
-  };
+  } catch (error) {
+    console.error("Error updating status:", error);
+    toast.error("An error occurred while updating the status.");
+  }
+};
 
   const getStatusColor = (status) => {
     switch (status) {

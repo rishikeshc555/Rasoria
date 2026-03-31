@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { io } from "socket.io-client"; // <-- 1. Import Socket.io client
+import { io } from "socket.io-client"; 
+import toast from "react-hot-toast"; // <-- Added toast import so the user sees the update!
 
-// 2. Initialize socket connection OUTSIDE the component
 const socket = io("https://rasoria-api.onrender.com", {
   withCredentials: true,
   transports: ["websocket", "polling"] 
@@ -25,13 +25,14 @@ const CustomerDashboard = () => {
     const parsedUser = JSON.parse(storedUser);
     setUser(parsedUser);
 
-    // 3. The REAL fetch logic replaces the dummy data
     const fetchUserOrders = async () => {
       try {
-        // Grab the ID from your session storage user object
         const userId = parsedUser._id || parsedUser.id; 
         
-        const response = await fetch(`https://rasoria-api.onrender.com/api/orders/user/${userId}`);
+        // <-- CRITICAL: Added credentials here so the backend doesn't block it
+        const response = await fetch(`https://rasoria-api.onrender.com/api/orders/user/${userId}`, {
+          credentials: "include" 
+        });
         const data = await response.json();
 
         if (data.success) {
@@ -49,17 +50,22 @@ const CustomerDashboard = () => {
 
   // --- SOCKET.IO REAL-TIME LISTENER ---
   useEffect(() => {
-    // 4. Listen for the exact event name the backend shouts
     socket.on("orderStatusUpdated", (updatedOrder) => {
-      // Update the React state instantly!
       setOrders((prevOrders) => 
-        prevOrders.map((order) => 
-          order._id === updatedOrder._id ? updatedOrder : order
-        )
+        prevOrders.map((order) => {
+          // If this is the order being updated, show a toast and replace the data!
+          if (order._id === updatedOrder._id) {
+            toast.success(`Order status changed to: ${updatedOrder.status} 🚀`, {
+              style: { border: '1px solid #f97316', padding: '16px', color: '#713f12' },
+              iconTheme: { primary: '#f97316', secondary: '#fff' },
+            });
+            return updatedOrder;
+          }
+          return order;
+        })
       );
     });
 
-    // Cleanup the listener when leaving the page
     return () => {
       socket.off("orderStatusUpdated");
     };
@@ -123,11 +129,9 @@ const CustomerDashboard = () => {
                     <tbody>
                       {orders.map((order) => (
                         <tr key={order._id} className="border-b hover:bg-gray-50 transition">
-                          {/* Slicing the ID so it's readable instead of a massive 24 character string */}
                           <td className="p-3 text-sm font-medium text-gray-800">
                             ...{order._id.slice(-6).toUpperCase()}
                           </td>
-                          {/* Formatting the MongoDB createdAt timestamp to a clean date string */}
                           <td className="p-3 text-sm text-gray-600">
                             {new Date(order.createdAt).toLocaleDateString()}
                           </td>
@@ -140,7 +144,6 @@ const CustomerDashboard = () => {
                               {order.status}
                             </span>
                           </td>
-                          {/* Changed from order.total to order.totalAmount to match DB Schema */}
                           <td className="p-3 text-sm font-medium text-gray-800">₹{order.totalAmount}</td>
                         </tr>
                       ))}
