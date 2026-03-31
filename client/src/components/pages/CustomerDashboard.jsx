@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client"; // <-- 1. Import Socket.io client
 
 // 2. Initialize socket connection OUTSIDE the component
-const socket = io("https://rasoria-api.onrender.com");
+const socket = io("https://rasoria-api.onrender.com", {
+  withCredentials: true,
+  transports: ["websocket", "polling"] 
+});
 
 const CustomerDashboard = () => {
   const navigate = useNavigate();
