@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client"; 
-import toast from "react-hot-toast"; // <-- Added toast import so the user sees the update!
+import toast, { Toaster } from "react-hot-toast"; // <-- 1. Add Toaster here!
 
 const socket = io("https://rasoria-api.onrender.com", {
   withCredentials: true,
@@ -50,24 +50,33 @@ const CustomerDashboard = () => {
 
   // --- SOCKET.IO REAL-TIME LISTENER ---
   useEffect(() => {
-    socket.on("orderStatusUpdated", (updatedOrder) => {
-      setOrders((prevOrders) => 
-        prevOrders.map((order) => {
-          // If this is the order being updated, show a toast and replace the data!
-          if (order._id === updatedOrder._id) {
-            toast.success(`Order status changed to: ${updatedOrder.status} 🚀`, {
-              style: { border: '1px solid #f97316', padding: '16px', color: '#713f12' },
-              iconTheme: { primary: '#f97316', secondary: '#fff' },
-            });
-            return updatedOrder;
-          }
-          return order;
-        })
-      );
-    });
+    const handleStatusUpdate = (updatedOrder) => {
+      setOrders((prevOrders) => {
+        // First, check if the updated order belongs to this customer
+        const isMyOrder = prevOrders.some((order) => order._id === updatedOrder._id);
+        
+        if (isMyOrder) {
+          // If it is their order, trigger the popup!
+          toast.success(`Order status changed to: ${updatedOrder.status} 🚀`, {
+            style: { border: '1px solid #f97316', padding: '16px', color: '#713f12' },
+            iconTheme: { primary: '#f97316', secondary: '#fff' },
+          });
+
+          // Replace the old order data with the new updated order
+          return prevOrders.map((order) => 
+            order._id === updatedOrder._id ? updatedOrder : order
+          );
+        }
+        
+        // If it's not their order, do nothing
+        return prevOrders;
+      });
+    };
+
+    socket.on("orderStatusUpdated", handleStatusUpdate);
 
     return () => {
-      socket.off("orderStatusUpdated");
+      socket.off("orderStatusUpdated", handleStatusUpdate);
     };
   }, []);
 
@@ -75,6 +84,8 @@ const CustomerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-28 pb-12 px-6">
+      {/* 2. ADD THIS LINE SO THE POPUP CAN RENDER */}
+      <Toaster position="top-right" />
       <div className="max-w-5xl mx-auto">
         
         {/* Header Section */}
