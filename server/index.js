@@ -1,21 +1,39 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const http = require("http"); // <-- 1. Import Node's native HTTP module
-const { Server } = require("socket.io"); // <-- 2. Import Socket.io
+const http = require("http"); 
+const { Server } = require("socket.io"); 
 require("dotenv").config(); 
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// 3. Create an HTTP server and wrap the Express app
+// 1. --- BULLETPROOF CORS SETUP ---
+// List exactly who is allowed to talk to your backend. 
+// Make sure your Vercel URL here matches exactly (no slash at the end!)
+const allowedOrigins = [
+  "http://localhost:3000", 
+  "http://localhost:5173",
+  "https://rasoria.vercel.app" 
+];
+
+// 2. Apply Express Middleware FIRST
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
+  credentials: true // Important for strict browser security
+}));
+app.use(express.json());
+
+// 3. Create HTTP server
 const server = http.createServer(app);
 
-// 4. Initialize Socket.io with CORS enabled
+// 4. Initialize Socket.io with the EXACT SAME strict CORS settings
 const io = new Server(server, {
   cors: {
-    origin: "*", // In production, replace with your Vercel URL
-    methods: ["GET", "POST", "PATCH"]
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PATCH"],
+    credentials: true
   }
 });
 
@@ -36,10 +54,6 @@ const authRoutes = require("./routes/authRoutes");
 const reservationRoutes = require("./routes/reservationRoutes");
 const orderRoutes = require("./routes/orderRoutes"); 
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected successfully"))
@@ -54,7 +68,7 @@ app.get("/", (req, res) => {
   res.send("Rasoria Backend Running with WebSockets!");
 });
 
-// 6. VERY IMPORTANT: Start 'server', not 'app'
+// 6. Start 'server', not 'app'
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
