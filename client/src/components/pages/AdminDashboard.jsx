@@ -56,36 +56,35 @@ const AdminDashboard = () => {
   };
 
   // --- STAGE 4: SOCKET.IO REAL-TIME LISTENER FOR NEW ORDERS ---
-  useEffect(() => {
-    // Listen for the "newOrderReceived" event broadcasted by the backend
-    socket.on("newOrderReceived", (newOrder) => {
-      
-      // 1. Play the notification sound from the public folder
-      const audio = new Audio("/notification.mp3"); 
-      audio.play().catch(err => console.log("Audio play blocked by browser:", err));
+useEffect(() => {
+  // Listen for the "newOrderReceived" event broadcasted by the backend
+  socket.on("newOrderReceived", (newOrder) => {
+    
+    // 1. Play the notification sound from the public folder
+    const audio = new Audio("/notification.mp3"); 
+    audio.play().catch(err => console.warn("Audio play blocked by browser (click the page first!):", err));
 
-      // 2. Show a sleek pop-up notification
-      toast.success(`New Order Received! ₹${newOrder.totalAmount}`, {
-        icon: '🔔',
-        duration: 5000,
-        style: {
-          border: '1px solid #f97316',
-          padding: '16px',
-          color: '#713f12',
-          background: '#fff7ed',
-        },
-      });
-
-      // 3. Update the React state instantly to push the new order to the TOP of the list
-      setOrders((prevOrders) => [newOrder, ...prevOrders]);
+    // 2. Show a sleek pop-up notification
+    toast.success(`New Order Received! ₹${newOrder.totalAmount}`, {
+      icon: '🔔',
+      duration: 5000,
+      style: {
+        border: '1px solid #f97316',
+        padding: '16px',
+        color: '#713f12',
+        background: '#fff7ed',
+      },
     });
 
-    // Cleanup listener when the admin navigates away from the page
-    return () => {
-      socket.off("newOrderReceived");
-    };
-  }, []);
-  // --- END STAGE 4 ADDITIONS ---
+    // 3. Update the React state instantly to push the new order to the TOP of the list
+    setOrders((prevOrders) => [newOrder, ...prevOrders]);
+  });
+
+  // Cleanup listener when the admin navigates away from the page
+  return () => {
+    socket.off("newOrderReceived");
+  };
+}, []);  // --- END STAGE 4 ADDITIONS ---
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
