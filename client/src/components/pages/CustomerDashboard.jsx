@@ -1,31 +1,66 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { io } from "socket.io-client"; // <-- 1. Import Socket.io client
+
+// 2. Initialize socket connection OUTSIDE the component
+const socket = io("http://localhost:5001");
 
 const CustomerDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [orders, setOrders] = useState([]); // We will store past orders here
+  const [orders, setOrders] = useState([]); 
   const [loading, setLoading] = useState(true);
 
+  // --- FETCH ORDERS ON LOAD ---
   useEffect(() => {
-    // 1. Check if user is logged in
     const storedUser = sessionStorage.getItem("user");
     if (!storedUser) {
-      navigate("/auth"); // If not logged in, kick them back to the login page
+      navigate("/auth"); 
       return;
     }
     
-    setUser(JSON.parse(storedUser));
+    const parsedUser = JSON.parse(storedUser);
+    setUser(parsedUser);
 
-    // 2. Placeholder: Here is where we will fetch their actual orders from the backend later!
-    // For now, we'll use some dummy data so you can see how the UI looks.
-    setOrders([
-      { _id: "ORD-1029", date: "2026-03-25", total: 1098, status: "Delivered" },
-      { _id: "ORD-1030", date: "2026-03-28", total: 499, status: "Processing" },
-    ]);
-    
-    setLoading(false);
+    // 3. The REAL fetch logic replaces the dummy data
+    const fetchUserOrders = async () => {
+      try {
+        // Grab the ID from your session storage user object
+        const userId = parsedUser._id || parsedUser.id; 
+        
+        const response = await fetch(`http://localhost:5001/api/orders/user/${userId}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setOrders(data.orders);
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserOrders();
   }, [navigate]);
+
+  // --- SOCKET.IO REAL-TIME LISTENER ---
+  useEffect(() => {
+    // 4. Listen for the exact event name the backend shouts
+    socket.on("orderStatusUpdated", (updatedOrder) => {
+      // Update the React state instantly!
+      setOrders((prevOrders) => 
+        prevOrders.map((order) => 
+          order._id === updatedOrder._id ? updatedOrder : order
+        )
+      );
+    });
+
+    // Cleanup the listener when leaving the page
+    return () => {
+      socket.off("orderStatusUpdated");
+    };
+  }, []);
 
   if (loading) return <div className="pt-32 text-center text-xl">Loading...</div>;
 
@@ -36,7 +71,7 @@ const CustomerDashboard = () => {
         {/* Header Section */}
         <div className="mb-8">
           <h2 className="text-4xl font-serif font-bold text-gray-800">
-            Welcome back, <span className="text-orange-600">{user?.name.split(" ")[0]}</span>!
+            Welcome back, <span className="text-orange-600">{user?.name?.split(" ")[0]}</span>!
           </h2>
           <p className="text-gray-600 mt-2 text-lg">Manage your account and view your order history.</p>
         </div>
@@ -85,16 +120,25 @@ const CustomerDashboard = () => {
                     <tbody>
                       {orders.map((order) => (
                         <tr key={order._id} className="border-b hover:bg-gray-50 transition">
-                          <td className="p-3 text-sm font-medium text-gray-800">{order._id}</td>
-                          <td className="p-3 text-sm text-gray-600">{order.date}</td>
+                          {/* Slicing the ID so it's readable instead of a massive 24 character string */}
+                          <td className="p-3 text-sm font-medium text-gray-800">
+                            ...{order._id.slice(-6).toUpperCase()}
+                          </td>
+                          {/* Formatting the MongoDB createdAt timestamp to a clean date string */}
+                          <td className="p-3 text-sm text-gray-600">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </td>
                           <td className="p-3 text-sm">
                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                              order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                              order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 
+                              order.status === 'Cancelled' ? 'bg-red-100 text-red-700' : 
+                              'bg-orange-100 text-orange-700'
                             }`}>
                               {order.status}
                             </span>
                           </td>
-                          <td className="p-3 text-sm font-medium text-gray-800">₹{order.total}</td>
+                          {/* Changed from order.total to order.totalAmount to match DB Schema */}
+                          <td className="p-3 text-sm font-medium text-gray-800">₹{order.totalAmount}</td>
                         </tr>
                       ))}
                     </tbody>

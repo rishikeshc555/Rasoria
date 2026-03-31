@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // <-- NEW: Added for security redirects
+import { useNavigate } from "react-router-dom"; 
 import toast from "react-hot-toast";
+import { io } from "socket.io-client"; // <-- STAGE 4: Import Socket.io client
+
+// <-- STAGE 4: Initialize socket connection OUTSIDE the component
+const socket = io("http://localhost:5001");
 
 const AdminDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [adminUser, setAdminUser] = useState(null); // <-- NEW: To store the logged-in admin's info
+  const [adminUser, setAdminUser] = useState(null); 
   
-  const navigate = useNavigate(); // <-- NEW: To redirect unauthorized users
+  const navigate = useNavigate(); 
 
   useEffect(() => {
-    // --- NEW: SECURITY CHECK START ---
+    // --- SECURITY CHECK START ---
     const storedUser = sessionStorage.getItem("user");
 
     if (!storedUser) {
@@ -23,12 +27,12 @@ const AdminDashboard = () => {
 
     if (parsedUser.role !== "admin") {
       toast.error("Access Denied: Restaurant Staff Only");
-      navigate("/dashboard"); // Kick regular customers to their own dashboard
+      navigate("/dashboard"); 
       return;
     }
 
-    setAdminUser(parsedUser); // Save admin info so we can display their name
-    // --- NEW: SECURITY CHECK END ---
+    setAdminUser(parsedUser); 
+    // --- SECURITY CHECK END ---
 
     // If they pass the security check, fetch the live orders!
     fetchOrders();
@@ -47,6 +51,38 @@ const AdminDashboard = () => {
       setIsLoading(false);
     }
   };
+
+  // --- STAGE 4: SOCKET.IO REAL-TIME LISTENER FOR NEW ORDERS ---
+  useEffect(() => {
+    // Listen for the "newOrderReceived" event broadcasted by the backend
+    socket.on("newOrderReceived", (newOrder) => {
+      
+      // 1. Play the notification sound from the public folder
+      const audio = new Audio("/notification.mp3"); 
+      audio.play().catch(err => console.log("Audio play blocked by browser:", err));
+
+      // 2. Show a sleek pop-up notification
+      toast.success(`New Order Received! ₹${newOrder.totalAmount}`, {
+        icon: '🔔',
+        duration: 5000,
+        style: {
+          border: '1px solid #f97316',
+          padding: '16px',
+          color: '#713f12',
+          background: '#fff7ed',
+        },
+      });
+
+      // 3. Update the React state instantly to push the new order to the TOP of the list
+      setOrders((prevOrders) => [newOrder, ...prevOrders]);
+    });
+
+    // Cleanup listener when the admin navigates away from the page
+    return () => {
+      socket.off("newOrderReceived");
+    };
+  }, []);
+  // --- END STAGE 4 ADDITIONS ---
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
@@ -90,10 +126,10 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8 pt-28"> {/* Added pt-28 so it clears your fixed Navbar */}
+    <div className="min-h-screen bg-gray-100 p-8 pt-28"> 
       <div className="max-w-7xl mx-auto">
         
-        {/* UPDATED HEADER: Now shows Admin Name */}
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div>
             <h1 className="text-4xl font-serif font-bold text-brown-900">Restaurant Dashboard</h1>
@@ -111,7 +147,7 @@ const AdminDashboard = () => {
           </button>
         </div>
 
-        {/* The rest of your exact UI code stays exactly the same! */}
+        {/* ORDER LIST */}
         {isLoading ? (
           <p className="text-center text-gray-600 text-xl">Loading live orders...</p>
         ) : orders.length === 0 ? (
@@ -124,7 +160,7 @@ const AdminDashboard = () => {
               <div key={order._id} className="bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-600 relative overflow-hidden">
                 <div className="flex flex-col md:flex-row justify-between mb-4 pb-4 border-b border-gray-100">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-800">{order.customerName}</h2>
+                    <h2 className="text-xl font-bold text-gray-800">{order.customerName || "Customer"}</h2>
                     <p className="text-sm text-gray-500">Order ID: {order._id}</p>
                     <p className="text-sm text-gray-500">{new Date(order.createdAt).toLocaleString()}</p>
                   </div>
@@ -160,9 +196,10 @@ const AdminDashboard = () => {
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-700 mb-2">Customer Details:</h3>
                     <div className="text-sm text-gray-600 space-y-1">
-                      <p><span className="font-medium">Email:</span> {order.email}</p>
-                      <p><span className="font-medium">Phone:</span> {order.phone}</p>
-                      <p><span className="font-medium">Address:</span> {order.address}</p>
+                      {/* Using fallback strings to prevent crashes if a field is missing on older orders */}
+                      <p><span className="font-medium">Email:</span> {order.email || "N/A"}</p>
+                      <p><span className="font-medium">Phone:</span> {order.deliveryAddress?.phone || order.phone || "N/A"}</p>
+                      <p><span className="font-medium">Address:</span> {order.deliveryAddress ? `${order.deliveryAddress.street}, ${order.deliveryAddress.city}` : (order.address || "N/A")}</p>
                     </div>
                   </div>
                 </div>

@@ -2,10 +2,26 @@ const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema(
   {
-    customerName: { type: String, required: true },
-    email: { type: String, required: true },
-    phone: { type: String, required: true },
-    address: { type: String, required: true },
+    // NEW: Links this order directly to the User's account for Order History
+    user: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "User", 
+      required: true 
+    },
+    // NEW: We structure the address so it perfectly matches the user's saved addresses
+    deliveryAddress: {
+      street: { type: String, required: true },
+      city: { type: String, required: true },
+      zipCode: { type: String, required: true },
+      phone: { type: String, required: true },
+    },
+    // NEW: Cash on Delivery or Pay on Delivery
+    paymentMethod: {
+      type: String,
+      enum: ["COD", "POD"],
+      required: true
+    },
+    // Keeping your existing items structure, but it's now ready for the frontend cart
     items: [
       {
         name: { type: String, required: true },
@@ -14,9 +30,10 @@ const orderSchema = new mongoose.Schema(
       }
     ],
     totalAmount: { type: Number, required: true },
+    // Adding "Accepted" to your existing statuses for the admin flow
     status: { 
       type: String, 
-      enum: ["Pending", "Preparing", "Out for Delivery", "Delivered"], 
+      enum: ["Pending", "Accepted", "Preparing", "Out for Delivery", "Delivered"], 
       default: "Pending" 
     },
   },
