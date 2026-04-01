@@ -1,14 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react"; // <-- NEW: Added useEffect
 import toast from "react-hot-toast";
 
 const CheckoutModal = ({ isOpen, onClose, cartItems, totalAmount, clearCart, closeCart }) => {
-  // Mock data: This will come from your User Context/Login later
   const mockSavedAddresses = [
     { id: "1", street: "123 Main St, Apt 4B", city: "New York", zipCode: "10001", phone: "9876543210" },
     { id: "2", street: "456 Office Blvd, Floor 2", city: "New York", zipCode: "10005", phone: "9876543210" }
   ];
 
-  const [addressMode, setAddressMode] = useState("saved"); // 'saved' or 'new'
+  const [addressMode, setAddressMode] = useState("saved"); 
   const [selectedSavedAddress, setSelectedSavedAddress] = useState(mockSavedAddresses[0] || null);
   
   const [newAddressForm, setNewAddressForm] = useState({
@@ -17,6 +16,25 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalAmount, clearCart, clo
   
   const [paymentMethod, setPaymentMethod] = useState("COD");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // NEW: Handle Mobile Back Button (Popstate)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Push a fake state to the browser history stack
+    window.history.pushState({ modalOpen: true }, '', window.location.href);
+
+    const handlePopState = (e) => {
+      // If the user hits the back button, close the modal instead of leaving the page
+      onClose();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -28,13 +46,9 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalAmount, clearCart, clo
     e.preventDefault();
     setIsSubmitting(true);
 
-    // 1. Grab the logged-in user from sessionStorage
     const storedUser = JSON.parse(sessionStorage.getItem("user"));
-    
-    // 2. Extract their ID safely. If no user is found, default to null.
     const realUserId = storedUser ? (storedUser._id || storedUser.id) : null;
 
-    // 3. Optional: Add a safety check in case they aren't logged in
     if (!realUserId) {
       toast.error("Please log in to place an order.");
       setIsSubmitting(false);
@@ -45,7 +59,6 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalAmount, clearCart, clo
       ? { street: selectedSavedAddress.street, city: selectedSavedAddress.city, zipCode: selectedSavedAddress.zipCode, phone: selectedSavedAddress.phone }
       : newAddressForm;
 
-    // 4. Now 'realUserId' is perfectly defined for the payload!
     const orderData = {
       user: realUserId, 
       items: cartItems.map(item => ({
@@ -62,6 +75,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalAmount, clearCart, clo
       const response = await fetch("https://rasoria-api.onrender.com/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // <-- Safety check to ensure CORS works
         body: JSON.stringify(orderData),
       });
 
@@ -98,7 +112,6 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalAmount, clearCart, clo
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Delivery Address</h3>
             
-            {/* Toggle Modes */}
             <div className="flex gap-4 mb-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" name="addressMode" checked={addressMode === "saved"} onChange={() => setAddressMode("saved")} className="text-orange-600 focus:ring-orange-500" />
@@ -110,7 +123,6 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalAmount, clearCart, clo
               </label>
             </div>
 
-            {/* Render Saved Addresses */}
             {addressMode === "saved" && (
               <div className="space-y-3">
                 {mockSavedAddresses.map(addr => (
@@ -123,7 +135,6 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalAmount, clearCart, clo
               </div>
             )}
 
-            {/* Render New Address Form */}
             {addressMode === "new" && (
               <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
                 <input required type="text" name="street" value={newAddressForm.street} onChange={handleNewAddressChange} className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-orange-500" placeholder="Street Address" />
@@ -136,7 +147,6 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalAmount, clearCart, clo
             )}
           </div>
 
-          {/* Payment Method Section */}
           <div>
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Payment Method</h3>
             <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500 bg-white">

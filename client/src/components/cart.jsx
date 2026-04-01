@@ -1,16 +1,36 @@
 import React, { useContext, useState } from "react";
 import { CartContext } from "../context/CartContext";
-import CheckoutModal from "./CheckoutModal"; // <-- Import the new modal
+import CheckoutModal from "./CheckoutModal"; 
+import { useNavigate } from "react-router-dom"; // <-- NEW
+import toast from "react-hot-toast"; // <-- NEW
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, clearCart, isCartOpen, setIsCartOpen } = useContext(CartContext);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false); // <-- Add state for the modal
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false); 
+  const navigate = useNavigate(); // <-- NEW
 
   const calculateTotal = () => {
     return cartItems.reduce((total, item) => {
       const priceNumber = parseInt(item.price.replace(/\D/g, ""), 10);
       return total + (isNaN(priceNumber) ? 0 : priceNumber * item.quantity);
     }, 0);
+  };
+
+  // NEW: Authentication Guard Function
+  const handleProceedToCheckout = () => {
+    const storedUser = sessionStorage.getItem("user");
+    
+    if (!storedUser) {
+      toast.error("Please login or create an account to place your order!", {
+        duration: 4000,
+      });
+      setIsCartOpen(false); // Close the cart
+      navigate("/auth"); // Send them to login
+      return;
+    }
+
+    // If logged in, open the modal
+    setIsCheckoutOpen(true);
   };
 
   return (
@@ -62,8 +82,9 @@ const Cart = () => {
               <span className="text-lg font-semibold text-gray-700">Total:</span>
               <span className="text-2xl font-bold text-brown-900">₹{calculateTotal()}</span>
             </div>
+            {/* UPDATED: Calling handleProceedToCheckout instead of opening modal directly */}
             <button 
-              onClick={() => setIsCheckoutOpen(true)} // <-- Open modal instead of API call
+              onClick={handleProceedToCheckout} 
               disabled={cartItems.length === 0}
               className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-lg text-lg font-semibold transition duration-300 disabled:opacity-50"
             >
