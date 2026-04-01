@@ -7,14 +7,11 @@ const Navbar = () => {
   const { cartItems, setIsCartOpen } = useContext(CartContext);
   const navigate = useNavigate();
   
-  // NEW: State to control the mobile menu dropdown
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Safely check if a user is logged in
   const userString = sessionStorage.getItem("user");
   const user = userString ? JSON.parse(userString) : null;
 
-  // Handle the logout process
   const handleLogout = () => {
     sessionStorage.removeItem("token");
     sessionStorage.removeItem("user");
@@ -23,10 +20,12 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 w-full bg-white shadow-md z-50 transition-all duration-300">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        {/* Logo */}
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-orange-800 whitespace-nowrap overflow-hidden text-ellipsis">
-          R A S O R I A
+      {/* ADJUSTED: Better padding for mobile vs desktop */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
+        
+        {/* LOGO FIX: Using tracking instead of hardcoded spaces to prevent mobile overlap */}
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-orange-800 tracking-[0.15em] shrink-0">
+          <Link to="/">RASORIA</Link>
         </h1>
 
         {/* Navigation Links - Desktop */}
@@ -90,30 +89,32 @@ const Navbar = () => {
         </ul>
 
         {/* Mobile View Icons (Hamburger + Cart + Auth) */}
-        <div className="flex items-center gap-4 md:hidden">
+        {/* FIX: gap-2 to save space, items centered perfectly */}
+        <div className="flex items-center gap-3 sm:gap-4 md:hidden">
           
           {/* Authentication Section (Mobile) */}
           {user ? (
             <button
               onClick={handleLogout}
-              className="text-xs border border-gray-800 text-gray-800 px-2 py-1 rounded hover:bg-gray-800 hover:text-white transition duration-300"
+              className="text-[10px] sm:text-xs border border-gray-800 text-gray-800 px-2 py-1.5 rounded hover:bg-gray-800 hover:text-white transition duration-300 whitespace-nowrap shrink-0"
             >
               Logout
             </button>
           ) : (
             <Link
               to="/auth"
-              className="text-xs bg-orange-600 text-white px-3 py-1.5 rounded-md font-semibold shadow-sm"
+              // FIX: Slightly smaller text, locked layout so it doesn't wrap 
+              className="text-[10px] sm:text-xs bg-orange-600 text-white px-2 py-1.5 rounded-md font-semibold shadow-sm whitespace-nowrap shrink-0"
             >
-              Login / Sign Up {/* FIXED: Changed from just "Login" */}
+              Login / Sign Up
             </Link>
           )}
 
           {/* Cart Icon */}
-          <button onClick={() => setIsCartOpen(true)} className="relative text-gray-800">
-            <FaShoppingCart size={24} />
+          <button onClick={() => setIsCartOpen(true)} className="relative text-gray-800 p-1 shrink-0">
+            <FaShoppingCart size={20} className="sm:w-6 sm:h-6" />
             {cartItems.length > 0 && (
-              <span className="absolute -top-2 -right-2 bg-orange-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-[10px] sm:text-xs font-bold rounded-full h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center">
                 {cartItems.length}
               </span>
             )}
@@ -122,34 +123,33 @@ const Navbar = () => {
           {/* Hamburger Menu Toggle */}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-            className="focus:outline-none"
+            className="focus:outline-none p-1 shrink-0"
           >
-            <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 sm:w-7 sm:h-7 text-gray-800" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               {isMobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /> // X icon when open
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /> 
               ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /> // 3 lines when closed
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /> 
               )}
             </svg>
           </button>
         </div>
       </div>
 
-      {/* NEW: Mobile Dropdown Menu */}
+      {/* Mobile Dropdown Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-white shadow-lg border-t py-4 px-6 flex flex-col gap-4 z-50">
+        <div className="md:hidden absolute top-full left-0 w-full bg-white shadow-xl border-t py-4 px-6 flex flex-col gap-4 z-50">
           <a href="#home" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-800 font-medium text-lg border-b pb-2">Home</a>
           <a href="#about" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-800 font-medium text-lg border-b pb-2">About</a>
           <a href="#menu" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-800 font-medium text-lg border-b pb-2">Menu</a>
           <a href="#reservation" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-800 font-medium text-lg border-b pb-2">Reservation</a>
           <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-800 font-medium text-lg">Contact</a>
           
-          {/* If user is logged in, give them a dashboard link on mobile */}
           {user && (
              <Link 
                to={user.role === "admin" ? "/admin" : "/dashboard"} 
                onClick={() => setIsMobileMenuOpen(false)}
-               className="bg-orange-600 text-white text-center py-2 rounded-md font-bold mt-2"
+               className="bg-orange-600 text-white text-center py-3 rounded-md font-bold mt-2 shadow-sm"
              >
                Go to Dashboard
              </Link>
